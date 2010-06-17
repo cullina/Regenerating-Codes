@@ -2,17 +2,20 @@ module RegeneratingCodes where
 
 import MatrixUtil
 import Math.Algebra.LinearAlgebra
-
+import List(sortBy)
 
 simpleRotationMatrix p = map (stdBasisVector p) ((p - 1) : [0..(p - 2)])
 
 
-compositeRotationMatrix ps = map (stdBasisVector (sum ps)) (indexList ps)
-			where indexList []     = []
-			      indexList (p:ps) = ((p - 1) : [0..(p - 2)]) ++ (map (+ p) (indexList ps))
+indexList []     = []
+indexList (p:ps) = ((p - 1) : [0..(p - 2)]) ++ (map (+ p) (indexList ps))
 
 
-rotationMatrix size period = compositeRotationMatrix $ greedyFactorDecomp size period
+rotationMatrix size period = permutationMatrix $ indexList $ greedyFactorDecomp size period
+
+
+permutationMatrix xs = map (stdBasisVector (length xs)) xs
+
 
 greedyFactorDecomp sum dividend = greedyDecomp sum (findFactors dividend)
 
@@ -24,6 +27,17 @@ greedyDecomp sum xs = let h = head xs
 
 findFactors n = filter (\x -> (rem n x) == 0) [n,n-1..1]
 
+cycleToImage :: [[Int]] -> [Int]
+
+cycleToImage = (map snd) . sortPairs . concat . (map singleCycleToImage)
+
+singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
+    where pairGen first prev []    = [(prev, first)]
+    	  pairGen first prev rest  = (prev, head rest) : pairGen first (head rest) (tail rest)
+
+sortPairs :: (Ord a) => [(a,a)] -> [(a,a)]
+
+sortPairs = sortBy (\x y -> compare (fst x) (fst y))
 
 
 

@@ -45,6 +45,10 @@ stdBasisVector length 0     = 1 : replicate (length - 1) 0
 stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
 
+
+
+
+
 mMap :: (a -> b) -> [[a]] -> [[b]]
 
 mMap f = map (map f)
