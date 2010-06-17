@@ -3,6 +3,10 @@ module MatrixUtil where
 import List (intersperse, transpose)
 import Math.Algebra.LinearAlgebra
 
+rows = length
+
+cols = length . head
+
 cartesianProduct :: [a] -> [b] -> [(a,b)]
 
 cartesianProduct [] ys = []

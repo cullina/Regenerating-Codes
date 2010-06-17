@@ -58,7 +58,7 @@ getPowers n matrix = genPowersStartingFrom n (iMx (length matrix)) matrix
 
 getRotations :: (Num a) => Int -> [[a]] -> [[[a]]]
 
-getRotations n matrix = map (<<*>> matrix) $ getPowers n $ rotationMatrix (length matrix) n
+getRotations n matrix = map (matrix <<*>>) $ getPowers n $ rotationMatrix (cols matrix) n
 
 
 getCombinations :: Int -> [a] -> [[a]]
@@ -72,4 +72,10 @@ getCombinations k list = if (length list) <= k
 
 testLinearIndependence :: (Fractional a) => Int -> Int -> [[a]] -> Bool
 
-testLinearIndependence n k matrix = and $ map (isFullRank . concat) $ getCombinations k $ getRotations n matrix
+testLinearIndependence n k matrix = and $ map isFullRank $ collectionPossibilities n k matrix
+
+
+collectionPossibilities :: (Fractional a) => Int -> Int -> [[a]] -> [[[a]]]
+
+collectionPossibilities n k matrix = map concat $ getCombinations k $ getRotations n matrix
+
