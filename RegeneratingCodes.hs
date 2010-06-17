@@ -6,9 +6,15 @@ import List(sortBy)
 
 simpleRotationMatrix p = map (stdBasisVector p) ((p - 1) : [0..(p - 2)])
 
-
 indexList []     = []
-indexList (p:ps) = ((p - 1) : [0..(p - 2)]) ++ (map (+ p) (indexList ps))
+indexList (p:ps) = [1..(p - 1)] ++ [0] ++ (map (+ p) (indexList ps))
+
+indexList2 = cycleToImage . cycleList
+
+cycleList :: [Int] -> [[Int]] 
+
+cycleList []     = []
+cycleList (x:xs) = [0..x-1] : (mMap (x +) (cycleList xs))
 
 
 rotationMatrix size period = permutationMatrix $ indexList $ greedyFactorDecomp size period
@@ -67,6 +73,3 @@ getCombinations k list = if (length list) <= k
 testLinearIndependence :: (Fractional a) => Int -> Int -> [[a]] -> Bool
 
 testLinearIndependence n k matrix = and $ map (isFullRank . concat) $ getCombinations k $ getRotations n matrix
-
-
------
