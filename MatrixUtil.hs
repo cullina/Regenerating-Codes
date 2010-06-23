@@ -1,6 +1,6 @@
 module MatrixUtil where
 
-import List (intersperse, transpose)
+import Data.List (intersperse, transpose, foldl')
 import Math.Algebra.LinearAlgebra
 
 rows = length
@@ -42,16 +42,48 @@ isFullRank = not . isAllZero . last . rowEchelonForm
 isAllZero vector = and $ map ((==) 0) vector
 
 
+sqNorm vector = vector <.> vector
+
+
 stdBasisVector :: (Num a) => Int -> Int -> [a]
 
 stdBasisVector 0      index = []
 stdBasisVector length 0     = 1 : replicate (length - 1) 0
 stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
+{-
+projection x = let xt = transpose x 
+               in xt <<*>> (inverse (x <<*>> xt)) <<*>> x
+                  
+projectionError x = iMx (cols x) <<->> (projection x)
+
+-}
 
 
+decompLQ :: (Fractional a) => [[a]] -> [[a]]
+
+decompLQ x = decompLQh x []
+
+decompLQh :: (Fractional a) => [[a]] -> [([a],a)] -> [[a]]
+
+decompLQh [] orthoVecs = map fst orthoVecs
+
+decompLQh (x:xs) orthoVecs = let projections  = map (vectorProjection x) orthoVecs
+                                 newOrthoVec  = (-1) *> (foldl' (<+>) ((-1) *> x) projections)
+                                 newOrthoVecs = (newOrthoVec, sqNorm newOrthoVec) : orthoVecs 
+                             in  decompLQh xs newOrthoVecs
+                             
+
+vectorProjection :: (Fractional a) => [a] -> ([a],a) -> [a]
+
+vectorProjection original target = let targetVec = fst target
+                                       targetLen = snd target
+                                   in  ((original <.> targetVec) / targetLen) *> targetVec
+                                       
+                            
 
 
+                         
 
 mMap :: (a -> b) -> [[a]] -> [[b]]
 
