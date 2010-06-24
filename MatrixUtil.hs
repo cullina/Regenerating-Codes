@@ -99,13 +99,14 @@ rowOperations1 :: (Fractional a) => [([a],[a])] -> [([a],[a])]
                   
 rowOperations1 [] = []                  
 rowOperations1 m@(([],_):rs) = m
-rowOperations1 m@(((x:xs),_):rs) = let rows = partition (\row -> head (fst row) /= 0) m
+rowOperations1 m@(((x:xs),_):rs) = let rows = partition checkLeadingZero m
                                        reducedRows = reduceRows $ map normalizeRow $ fst rows
                                        shortenedRows = map (mapFst tail) (snd rows)                                       
                                    in case reducedRows of 
-                                     []     -> map (mapFst (0 :)) (rowOperations1 shortenedRows)
-                                     (x:xs) -> x : map (mapFst (0 :)) (rowOperations1 (xs ++ shortenedRows))                                         
+                                       []     -> map (mapFst (0 :)) (rowOperations1 shortenedRows)
+                                       (x:xs) -> x : map (mapFst (0 :)) (rowOperations1 (xs ++ shortenedRows))                                         
 
+checkLeadingZero row = head (fst row) /= 0
 
 normalizeRow r@([],_) = r
 normalizeRow r@(x:xs,_) = mapPair ((1/x) *>) r
