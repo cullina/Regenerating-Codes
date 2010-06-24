@@ -1,6 +1,6 @@
 module MatrixUtil where
 
-import Data.List (intersperse, transpose, foldl')
+import Data.List (intersperse, transpose, foldl', partition)
 import Math.Algebra.LinearAlgebra
 
 rows = length
@@ -85,8 +85,38 @@ vectorProjection original target = let targetVec = fst target
                                        targetLen = snd target
                                    in  ((original <.> targetVec) / targetLen) *> targetVec
                                        
+
+attachIdentity matrix = zip matrix $ iMx $ rows matrix
                             
 
+rowOperations1 :: (Fractional a) => [([a],[a])] -> [([a],[a])]
+                                       
+                  
+rowOperations1 [] = []                  
+rowOperations1 m@(([],_):rs) = m
+rowOperations1 m@(((x:xs),_):rs) = let rows = partition (\row -> head (fst row) /= 0) m
+                                       reducedRows = reduceRows $ map normalizeRow $ fst rows
+                                       shortenedRows = map (mapFst tail) (snd rows)                                       
+                                   in case reducedRows of 
+                                     []     -> map (mapFst (0 :)) (rowOperations1 shortenedRows)
+                                     (x:xs) -> x : map (mapFst (0 :)) (rowOperations1 (xs ++ shortenedRows))                                         
+
+
+normalizeRow r@([],_) = r
+normalizeRow r@(x:xs,_) = mapPair ((1/x) *>) r
+
+reduceRows [] = []                  
+reduceRows (r:rs) = r : map ((mapFst tail) . (\r' -> zipPair (<->) r' r)) rs  
+
+                               
+mapFst f p = (f $ fst p, snd p)
+
+mapPair f p = (f $ fst p, f $ snd p)
+
+
+zipPair :: (a -> b -> c) -> (a,a) -> (b,b) -> (c,c)
+
+zipPair f p q = (f (fst p) (fst q), f (snd p) (snd q))
 
                          
 
