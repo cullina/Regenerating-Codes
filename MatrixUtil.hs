@@ -84,7 +84,12 @@ vectorProjection :: (Fractional a) => [a] -> ([a],a) -> [a]
 vectorProjection original target = let targetVec = fst target
                                        targetLen = snd target
                                    in  ((original <.> targetVec) / targetLen) *> targetVec
-                                       
+
+
+nullspace :: (Fractional a) => [[a]] -> [[a]]
+
+nullspace = (map snd) . (filter (isAllZero . fst)) . rowOperations1 . attachIdentity
+
 
 attachIdentity matrix = zip matrix $ iMx $ rows matrix
                             
