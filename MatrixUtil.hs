@@ -74,7 +74,7 @@ decompLQh :: (Fractional a) => [[a]] -> [([a],a)] -> [[a]]
 decompLQh [] orthoVecs = reverse $ map fst orthoVecs
 
 decompLQh (x:xs) orthoVecs = let projections  = map (vectorProjection x) orthoVecs
-                                 newOrthoVec  = (-1) *> (foldl' (<+>) ((-1) *> x) projections)
+                                 newOrthoVec  = foldl' (<->) x projections
                                  newOrthoVecs = (newOrthoVec, sqNorm newOrthoVec) : orthoVecs 
                              in  decompLQh xs newOrthoVecs
                              
