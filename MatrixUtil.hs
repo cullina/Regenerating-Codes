@@ -51,13 +51,18 @@ stdBasisVector 0      index = []
 stdBasisVector length 0     = 1 : replicate (length - 1) 0
 stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
-{-
-projection x = let xt = transpose x 
-               in xt <<*>> (inverse (x <<*>> xt)) <<*>> x
-                  
-projectionError x = iMx (cols x) <<->> (projection x)
 
--}
+projection x = let xt = transpose x 
+                   xi = inverse (x <<*>> xt)
+               in case xi of 
+                 Nothing -> Nothing
+                 Just y  -> Just (xt <<*>> y <<*>> x)
+                  
+projectionError x = case (projection x) of
+  Nothing -> Nothing
+  Just y  -> Just (iMx (cols x) <<->> y)
+
+
 
 
 decompLQ :: (Fractional a) => [[a]] -> [[a]]
@@ -66,7 +71,7 @@ decompLQ x = decompLQh x []
 
 decompLQh :: (Fractional a) => [[a]] -> [([a],a)] -> [[a]]
 
-decompLQh [] orthoVecs = map fst orthoVecs
+decompLQh [] orthoVecs = reverse $ map fst orthoVecs
 
 decompLQh (x:xs) orthoVecs = let projections  = map (vectorProjection x) orthoVecs
                                  newOrthoVec  = (-1) *> (foldl' (<+>) ((-1) *> x) projections)
