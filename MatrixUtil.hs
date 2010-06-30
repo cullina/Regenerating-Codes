@@ -86,6 +86,8 @@ vectorProjection original target = let targetVec = fst target
                                    in  ((original <.> targetVec) / targetLen) *> targetVec
 
 
+intersectionSpace m1 m2 = unzip $ map (splitAt (rows m1)) $ nullspace $ m1 ++ m2
+
 nullspace :: (Fractional a) => [[a]] -> [[a]]
 
 nullspace = (map snd) . (filter (isAllZero . fst)) . rowOperations1 . attachIdentity
