@@ -7,14 +7,9 @@ rows = length
 
 cols = length . head
 
-cartesianProduct :: [a] -> [b] -> [(a,b)]
 
-cartesianProduct [] ys = []
-cartesianProduct (x:xs) ys = (map (\z -> (x,z)) ys) ++ (cartesianProduct xs ys) 
-
-listCartesianProduct :: [a] -> [[a]] -> [[a]]
-
-listCartesianProduct x y = map (uncurry (:)) (cartesianProduct x y)
+listCartesianProduct [] ys = []
+listCartesianProduct (x:xs) ys = map (x :) ys ++ listCartesianProduct xs ys
 
 
 genAllVectors :: Int -> [a] -> [[a]]
