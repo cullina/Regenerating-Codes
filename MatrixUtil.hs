@@ -8,17 +8,29 @@ rows = length
 cols = length . head
 
 
+stdBasisVector :: (Num a) => Int -> Int -> [a]
+
+stdBasisVector 0      index = []
+stdBasisVector length 0     = 1 : replicate (length - 1) 0
+stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
+
+
 listCartesianProduct [] ys = []
 listCartesianProduct (x:xs) ys = map (x :) ys ++ listCartesianProduct xs ys
 
 
-genAllVectors :: Int -> [a] -> [[a]]
+genAllPrefixVectors :: (Num a) => Int -> Int -> [a] -> [[a]]
 
-genAllVectors 1 range = transpose [range]
-genAllVectors length range = listCartesianProduct range (genAllVectors (length - 1) range) 
+genAllPrefixVectors 0 zeros range = [replicate zeros 0]
+genAllPrefixVectors length zeros range = listCartesianProduct range (genAllPrefixVectors (length - 1) zeros range) 
 
 
-genAllMatrices :: Int -> Int -> [a] -> [[[a]]]
+genAllVectors :: (Num a) => Int -> [a] -> [[a]]
+
+genAllVectors length range = genAllPrefixVectors length 0 range
+
+
+genAllMatrices :: (Num a) => Int -> Int -> [a] -> [[[a]]]
 
 genAllMatrices 1 cols  range = transpose [genAllVectors cols range]
 genAllMatrices rows cols range = listCartesianProduct (genAllVectors cols range) (genAllMatrices (rows - 1) cols range)
@@ -29,6 +41,18 @@ genAllFullRankMatrices :: (Fractional a) => Int -> Int -> [a] -> [[[a]]]
 genAllFullRankMatrices rows cols range = (filter isFullRank) $ genAllMatrices rows cols range
 
 
+genAllRowEchelonMatrices rows cols range = map transpose $ gAREM rows cols 0 range
+
+
+gAREM rows 0 rank range = [[]]
+gAREM rows cols rank range = let increasedRank = map ((stdBasisVector rows rank) :) $ gAREM rows (cols - 1) (rank + 1) range
+                                 sameRank = listCartesianProduct (genAllPrefixVectors rank (rows - rank)  range) $ gAREM rows (cols - 1) rank range  
+                             in if cols + rank == rows
+                                then increasedRank
+                                else if rank == rows
+                                     then sameRank
+                                     else increasedRank ++ sameRank
+
 isFullRank :: (Fractional a) => [[a]] -> Bool
 
 isFullRank = not . isAllZero . last . rowEchelonForm
@@ -38,13 +62,6 @@ isAllZero vector = and $ map ((==) 0) vector
 
 
 sqNorm vector = vector <.> vector
-
-
-stdBasisVector :: (Num a) => Int -> Int -> [a]
-
-stdBasisVector 0      index = []
-stdBasisVector length 0     = 1 : replicate (length - 1) 0
-stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
 
 projection x = let xt = transpose x 
