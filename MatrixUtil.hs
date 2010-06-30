@@ -46,12 +46,14 @@ genAllRowEchelonMatrices rows cols range = map transpose $ gAREM rows cols 0 ran
 
 gAREM rows 0 rank range = [[]]
 gAREM rows cols rank range = let increasedRank = map ((stdBasisVector rows rank) :) $ gAREM rows (cols - 1) (rank + 1) range
-                                 sameRank = listCartesianProduct (genAllPrefixVectors rank (rows - rank)  range) $ gAREM rows (cols - 1) rank range  
+                                 vectors = genAllPrefixVectors rank (rows - rank)  range
+                                 sameRank = listCartesianProduct vectors $ gAREM rows (cols - 1) rank range  
                              in if cols + rank == rows
                                 then increasedRank
                                 else if rank == rows
                                      then sameRank
                                      else increasedRank ++ sameRank
+
 
 isFullRank :: (Fractional a) => [[a]] -> Bool
 
