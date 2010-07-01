@@ -49,7 +49,7 @@ sortPairs = sortBy (\x y -> compare (fst x) (fst y))
 
 getPowers :: (Num a) => Int -> [[a]] -> [[[a]]]
 
-getPowers n matrix = genPowersStartingFrom n (iMx (length matrix)) matrix
+getPowers n matrix = genPowersStartingFrom n matrix matrix
     where genPowersStartingFrom 1 start matrix = [start]
     	  genPowersStartingFrom n start matrix = 
     	      let next = matrix <<*>> start
@@ -58,7 +58,7 @@ getPowers n matrix = genPowersStartingFrom n (iMx (length matrix)) matrix
 
 getRotations :: (Num a) => Int -> [[a]] -> [[[a]]]
 
-getRotations n matrix = map (matrix <<*>>) $ getPowers n $ rotationMatrix (cols matrix) n
+getRotations n matrix = map (matrix <<*>>) $ getPowers (n - 1) $ rotationMatrix (cols matrix) n
 
 
 getCombinations :: Int -> [a] -> [[a]]
