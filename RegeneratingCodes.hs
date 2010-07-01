@@ -80,17 +80,6 @@ collectionPossibilities :: (Fractional a) => Int -> Int -> [[a]] -> [[[a]]]
 collectionPossibilities n k matrix = map concat $ getCombinations k $ getRotations n matrix
 
 
-intersections :: (Fractional a) => [[a]] -> [[[a]]] -> [[[a]]]
+recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
 
-intersections x = (map (fst . (intersectionSpace x)))
-
-
-listCartesianProductOverList :: [[a]] -> [[a]]
-
-listCartesianProductOverList = foldl' (flip listCartesianProduct) [[]]
-
-
-testRecovery x = (filter isFullRank) . listCartesianProductOverList . (intersections x)
-
-
---intersections x as = (filter isFullRank) . (
+testRecovery x = (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
