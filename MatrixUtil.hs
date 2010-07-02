@@ -24,35 +24,35 @@ listCartesianProductOverList :: [[a]] -> [[a]]
 listCartesianProductOverList = foldr listCartesianProduct [[]]
 
 
-genAllPrefixVectors :: (Num a) => Int -> Int -> [a] -> [[a]]
+genAllPrefixVectors :: (Num a) => [a] -> Int -> Int -> [[a]]
 
-genAllPrefixVectors 0 zeros range = [replicate zeros 0]
-genAllPrefixVectors length zeros range = listCartesianProduct range (genAllPrefixVectors (length - 1) zeros range) 
-
-
-genAllVectors :: (Num a) => Int -> [a] -> [[a]]
-
-genAllVectors length range = genAllPrefixVectors length 0 range
+genAllPrefixVectors range 0 zeros = [replicate zeros 0]
+genAllPrefixVectors range length zeros = listCartesianProduct range (genAllPrefixVectors range (length - 1) zeros) 
 
 
-genAllMatrices :: (Num a) => Int -> Int -> [a] -> [[[a]]]
+genAllVectors :: (Num a) => [a] -> Int -> [[a]]
 
-genAllMatrices 1 cols  range = transpose [genAllVectors cols range]
-genAllMatrices rows cols range = listCartesianProduct (genAllVectors cols range) (genAllMatrices (rows - 1) cols range)
-
-
-genAllFullRankMatrices :: (Fractional a) => Int -> Int -> [a] -> [[[a]]]
-
-genAllFullRankMatrices rows cols range = (filter isFullRank) $ genAllMatrices rows cols range
+genAllVectors range length = genAllPrefixVectors range length 0
 
 
-genAllRowEchelonMatrices rows cols range = map transpose $ gAREM rows cols 0 range
+genAllMatrices :: (Num a) => [a] -> Int -> Int -> [[[a]]]
+
+genAllMatrices range 1 cols = transpose [genAllVectors range cols]
+genAllMatrices range rows cols = listCartesianProduct (genAllVectors range cols) (genAllMatrices range (rows - 1) cols)
 
 
-gAREM rows 0 rank range = [[]]
-gAREM rows cols rank range = let increasedRank = map ((stdBasisVector rows rank) :) $ gAREM rows (cols - 1) (rank + 1) range
-                                 vectors = genAllPrefixVectors rank (rows - rank)  range
-                                 sameRank = listCartesianProduct vectors $ gAREM rows (cols - 1) rank range  
+genAllFullRankMatrices :: (Fractional a) => [a] -> Int -> Int -> [[[a]]]
+
+genAllFullRankMatrices range rows cols = (filter isFullRank) $ genAllMatrices range rows cols
+
+
+genAllRowEchelonMatrices range rows cols = map transpose $ gAREM range rows cols 0
+
+
+gAREM range rows 0 rank = [[]]
+gAREM range rows cols rank = let increasedRank = map ((stdBasisVector rows rank) :) $ gAREM range rows (cols - 1) (rank + 1)
+                                 vectors = genAllPrefixVectors range rank (rows - rank)
+                                 sameRank = listCartesianProduct vectors $ gAREM range rows (cols - 1) rank
                              in if cols + rank == rows
                                 then increasedRank
                                 else if rank == rows
@@ -60,8 +60,8 @@ gAREM rows cols rank range = let increasedRank = map ((stdBasisVector rows rank)
                                      else increasedRank ++ sameRank
 
 
-genAllNonOverlappingSubspaces rowEchelonMatrix dim range = let projector = getComplementaryBasis rowEchelonMatrix 
-                                                               subspaces = genAllRowEchelonMatrices dim (rows projector) range
+genAllNonOverlappingSubspaces range rowEchelonMatrix dim = let projector = getComplementaryBasis rowEchelonMatrix 
+                                                               subspaces = genAllRowEchelonMatrices range dim (rows projector)
                                                            in  map (<<*>> projector) subspaces
                                                               
 getComplementaryBasis rowEchelonMatrix = let numCols = cols rowEchelonMatrix

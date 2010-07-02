@@ -97,6 +97,6 @@ testRecovery lostStorage remainingStorage additionalRecovered = RegenCode lostSt
 
 searchForRecovery field n lostStorage = let remainingStorage       = getRotations n lostStorage
                                             numAdditionalRecovered = n - 1 - (rows lostStorage) 
-                                            additionalRecovered    = genAllNonOverlappingSubspaces lostStorage numAdditionalRecovered field
+                                            additionalRecovered    = genAllNonOverlappingSubspaces field lostStorage numAdditionalRecovered
                                             testedCodes            = map (testRecovery lostStorage remainingStorage) additionalRecovered
                                         in filter (not . null . recoveryCoefficients) testedCodes
