@@ -85,6 +85,10 @@ isFullRank = not . isAllZero . last . rowEchelonForm
 
 isAllZero vector = and $ map ((==) 0) vector
 
+normalize [] = []
+normalize (0:xs) = 0 : normalize xs
+normalize (x:xs) = 1 : (1 / x) *> xs
+
 
 sqNorm vector = vector <.> vector
 

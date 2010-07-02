@@ -90,7 +90,7 @@ collectionPossibilities n k = (map concat) . (getCombinations k) . (getRotations
 
 recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
 
-testRecovery1 x = (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
+testRecovery1 x = (map (map normalize)) . (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
 
 testRecovery lostStorage remainingStorage additionalRecovered = RegenCode lostStorage additionalRecovered (testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
 
@@ -109,4 +109,4 @@ searchForCodes field n k =  let lostStorage = genAllRowEchelonMatrices field (n 
                                
 printCode code = printMatrix (storageMatrix code) ++
                  printMatrix (additionalRecoveredVectors code) ++
-                 printMatrix (recoveryCoefficients code) ++ "\n"
+                 concat (map printMatrix (recoveryCoefficients code)) ++ "\n"
