@@ -82,4 +82,13 @@ collectionPossibilities n k matrix = map concat $ getCombinations k $ getRotatio
 
 recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
 
-testRecovery x = (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
+testRecovery1 x = (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
+
+testRecovery lostStorage remainingStorage additionalRecovered = (lostStorage, additionalRecovered, testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
+
+
+searchForRecovery field n lostStorage = let remainingStorage       = getRotations n lostStorage
+                                            numAdditionalRecovered = n - 1 - (rows lostStorage) 
+                                            additionalRecovered    = genAllNonOverlappingSubspaces lostStorage numAdditionalRecovered field
+                                            testedCodes            = map (testRecovery lostStorage remainingStorage) additionalRecovered
+                                        in testedCodes

@@ -60,6 +60,24 @@ gAREM rows cols rank range = let increasedRank = map ((stdBasisVector rows rank)
                                      else increasedRank ++ sameRank
 
 
+genAllNonOverlappingSubspaces rowEchelonMatrix dim range = let projector = getComplementaryBasis rowEchelonMatrix 
+                                                               subspaces = genAllRowEchelonMatrices dim (rows projector) range
+                                                           in  map (<<*>> projector) subspaces
+                                                              
+getComplementaryBasis rowEchelonMatrix = let numCols = cols rowEchelonMatrix
+                                         in map (stdBasisVector numCols) $ otherIndices 0 numCols $ map (length . (takeWhile (== 0))) rowEchelonMatrix
+  
+otherIndices :: Int -> Int -> [Int] -> [Int]                                            
+
+otherIndices start end [] = [start..end-1]
+otherIndices start end l@(x:xs) = if start >= end 
+                                  then []
+                                  else  if start == x
+                                        then otherIndices (start + 1) end xs
+                                        else start : (otherIndices (start + 1) end l)
+                                           
+                                             
+
 isFullRank :: (Fractional a) => [[a]] -> Bool
 
 isFullRank = not . isAllZero . last . rowEchelonForm
