@@ -4,6 +4,14 @@ import MatrixUtil
 import Math.Algebra.LinearAlgebra
 import Data.List(sortBy, foldl')
 
+
+
+data RegenCode field = RegenCode {  
+    storageMatrix              :: [[field]] 
+  , additionalRecoveredVectors :: [[field]] 
+  , recoveryCoefficients       :: [[[field]]]
+  } deriving (Show)
+
 simpleRotationMatrix p = map (stdBasisVector p) ((p - 1) : [0..(p - 2)])
 
 indexList []     = []
@@ -84,11 +92,11 @@ recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace
 
 testRecovery1 x = (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
 
-testRecovery lostStorage remainingStorage additionalRecovered = (lostStorage, additionalRecovered, testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
+testRecovery lostStorage remainingStorage additionalRecovered = RegenCode lostStorage additionalRecovered (testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
 
 
 searchForRecovery field n lostStorage = let remainingStorage       = getRotations n lostStorage
                                             numAdditionalRecovered = n - 1 - (rows lostStorage) 
                                             additionalRecovered    = genAllNonOverlappingSubspaces lostStorage numAdditionalRecovered field
                                             testedCodes            = map (testRecovery lostStorage remainingStorage) additionalRecovered
-                                        in testedCodes
+                                        in filter (not . null . recoveryCoefficients) testedCodes
