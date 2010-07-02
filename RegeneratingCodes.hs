@@ -80,12 +80,12 @@ getCombinations k list = if (length list) <= k
 
 testLinearIndependence :: (Fractional a) => Int -> Int -> [[a]] -> Bool
 
-testLinearIndependence n k matrix = and $ map isFullRank $ collectionPossibilities n k matrix
+testLinearIndependence n k = and . (map isFullRank) . (collectionPossibilities n k)
 
 
 collectionPossibilities :: (Fractional a) => Int -> Int -> [[a]] -> [[[a]]]
 
-collectionPossibilities n k matrix = map concat $ getCombinations k $ getRotations n matrix
+collectionPossibilities n k = (map concat) . (getCombinations k) . (getRotations n)
 
 
 recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
@@ -100,3 +100,13 @@ searchForRecovery field n lostStorage = let remainingStorage       = getRotation
                                             additionalRecovered    = genAllNonOverlappingSubspaces field lostStorage numAdditionalRecovered
                                             testedCodes            = map (testRecovery lostStorage remainingStorage) additionalRecovered
                                         in filter (not . null . recoveryCoefficients) testedCodes
+                                           
+
+searchForCodes field n k =  let lostStorage = genAllRowEchelonMatrices field (n - k) ((n - k) * k)
+                                independent = filter (testLinearIndependence n k) lostStorage
+                                codes       = map (searchForRecovery field n) independent
+                            in filter (not . null) codes
+                               
+printCode code = printMatrix (storageMatrix code) ++
+                 printMatrix (additionalRecoveredVectors code) ++
+                 printMatrix (recoveryCoefficients code) ++ "\n"
