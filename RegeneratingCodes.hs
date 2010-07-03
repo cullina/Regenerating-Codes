@@ -2,6 +2,8 @@ module RegeneratingCodes where
 
 import MatrixUtil
 import Math.Algebra.LinearAlgebra
+import Math.Algebra.Field.Base
+import Math.Algebra.Field.Extension
 import Data.List(sortBy, foldl')
 
 
@@ -107,6 +109,21 @@ searchForCodes field n k =  let lostStorage = genAllRowEchelonMatrices field (n 
                                 codes       = map (searchForRecovery field n) independent
                             in filter (not . null) codes
                                
+searchForCodesF3 = searchForCodes f3
+
+searchForCodesF4 = searchForCodes f4
+
+searchForCodesF5 = searchForCodes f5
+
+searchForCodesF7 = searchForCodes f7
+
+                               
 printCode code = printMatrix (storageMatrix code) ++
                  printMatrix (additionalRecoveredVectors code) ++
                  concat (map printMatrix (recoveryCoefficients code)) ++ "\n"
+
+printResults results = let summary = searchSummary results
+                           body = (concat . (map (printCode . head))) results
+                           in summary ++ body ++ summary
+
+searchSummary results = show (length results) ++ " codes found\n\n"
