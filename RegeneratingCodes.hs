@@ -14,12 +14,10 @@ data RegenCode field = RegenCode {
   , recoveryCoefficients       :: [[[field]]]
   } deriving (Show)
 
-simpleRotationMatrix p = map (stdBasisVector p) ((p - 1) : [0..(p - 2)])
+indexList :: (Int -> Int) -> [Int] -> [Int]
 
-indexList []     = []
-indexList (p:ps) = [1..(p - 1)] ++ [0] ++ (map (+ p) (indexList ps))
-
-indexList2 = cycleToImage . cycleList
+indexList f []     = []
+indexList f (p:ps) = (map ((flip rem p) . f) [0..p-1]) ++ (map (+ p) (indexList  f ps))  
 
 cycleList :: [Int] -> [[Int]] 
 
@@ -27,7 +25,16 @@ cycleList []     = []
 cycleList (x:xs) = [0..x-1] : (mMap (x +) (cycleList xs))
 
 
-rotationMatrix size period = permutationMatrix $ indexList $ greedyFactorDecomp size period
+operationMatrix :: (Num a) => (Int -> Int) -> Int -> Int -> [[a]]
+
+operationMatrix f size period = permutationMatrix $ indexList f $ greedyFactorDecomp size period
+
+
+rotationMatrix :: (Num a) => Int -> Int -> [[a]]
+
+rotationMatrix = operationMatrix (+ 1)
+
+multiplicationMatrix m = operationMatrix (* m)
 
 
 permutationMatrix xs = map (stdBasisVector (length xs)) xs
