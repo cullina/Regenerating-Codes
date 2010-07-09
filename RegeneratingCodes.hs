@@ -4,7 +4,7 @@ import MatrixUtil
 import Math.Algebra.LinearAlgebra
 import Math.Algebra.Field.Base
 import Math.Algebra.Field.Extension
-import Data.List(sortBy, foldl')
+import Data.List(sortBy, foldl', intersect)
 
 
 
@@ -61,6 +61,20 @@ singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
 sortPairs :: (Ord a) => [(a,a)] -> [(a,a)]
 
 sortPairs = sortBy (\x y -> compare (fst x) (fst y))
+
+
+quotientList :: (Eq a) => [a -> a] -> [a] -> [a]
+
+quotientList fs xs = foldl' (addIfNew fs) [] xs
+
+
+addIfNew :: (Eq a) => [a -> a] -> [a] -> a -> [a]
+
+addIfNew [] quotient candidate = []
+addIfNew fs quotient candidate = let candidates = map ($ candidate) fs
+                                 in  if null (intersect quotient candidates)
+                                     then (head candidates) : quotient
+                                     else quotient
 
 
 
