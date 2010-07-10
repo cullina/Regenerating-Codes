@@ -1,4 +1,15 @@
-module MatrixUtil where
+module MatrixUtil 
+       (
+         mMap,
+         stdBasisVector,
+         isFullRank,
+         intersectionSpace,
+         listCartesianProductOverList,
+         normalize,
+         printMatrix,
+         genAllRowEchelonMatrices,
+         genAllNonOverlappingSubspaces
+       )where
 
 import Data.List (intersperse, transpose, foldl', partition)
 import Math.Algebra.LinearAlgebra
@@ -16,8 +27,7 @@ stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
 
 listCartesianProduct xs ys = concatMap (prependToAll ys) xs 
-
-prependToAll ys x = map (x :) ys
+  where prependToAll ys x = map (x :) ys
 
 
 listCartesianProductOverList :: [[a]] -> [[a]]
