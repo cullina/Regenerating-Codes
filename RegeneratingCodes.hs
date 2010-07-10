@@ -50,6 +50,9 @@ greedyDecomp sum xs = let h = head xs
 
 findFactors n = filter (\x -> (rem n x) == 0) [n,n-1..1]
 
+coprimes n = filter (\x -> 1 == gcd n x) [2 .. n-1]
+
+
 cycleToImage :: [[Int]] -> [Int]
 
 cycleToImage = (map snd) . sortPairs . concat . (map singleCycleToImage)
@@ -116,9 +119,9 @@ collectionPossibilities :: (Fractional a) => Int -> ([[a]] , [[[a]]]) -> [[[a]]]
 collectionPossibilities k items = map (concat . (fst items :)) $ getCombinations (k - 1) (snd items) 
 
 
-recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
+recoveryPossibilities x = listCartesianProductOverList . map (intersectionSpace x)
 
-testRecovery1 x = (map (map normalize)) . (map snd) . (filter (isFullRank . fst)) . (map unzip) . (recoveryPossibilities x)
+testRecovery1 x = map (map normalize) . map snd . filter (isFullRank . fst) . map unzip . recoveryPossibilities x
 
 testRecovery lostStorage remainingStorage additionalRecovered = RegenCode lostStorage additionalRecovered (testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
 

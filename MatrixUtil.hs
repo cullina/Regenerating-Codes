@@ -15,8 +15,9 @@ stdBasisVector length 0     = 1 : replicate (length - 1) 0
 stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
 
-listCartesianProduct [] ys = []
-listCartesianProduct (x:xs) ys = map (x :) ys ++ listCartesianProduct xs ys
+listCartesianProduct xs ys = concatMap (prependToAll ys) xs 
+
+prependToAll ys x = map (x :) ys
 
 
 listCartesianProductOverList :: [[a]] -> [[a]]
@@ -41,11 +42,6 @@ genAllMatrices range 1 cols = transpose [genAllVectors range cols]
 genAllMatrices range rows cols = listCartesianProduct (genAllVectors range cols) (genAllMatrices range (rows - 1) cols)
 
 
-genAllFullRankMatrices :: (Fractional a) => [a] -> Int -> Int -> [[[a]]]
-
-genAllFullRankMatrices range rows cols = (filter isFullRank) $ genAllMatrices range rows cols
-
-
 genAllRowEchelonMatrices range rows cols = map transpose $ gAREM range rows cols 0
 
 
@@ -65,25 +61,22 @@ genAllNonOverlappingSubspaces range rowEchelonMatrix dim = let projector = getCo
                                                            in  map (<<*>> projector) subspaces
                                                               
 getComplementaryBasis rowEchelonMatrix = let numCols = cols rowEchelonMatrix
-                                         in map (stdBasisVector numCols) $ otherIndices 0 numCols $ map (length . (takeWhile (== 0))) rowEchelonMatrix
+                                         in map (stdBasisVector numCols) $ otherIndices 0 numCols $ map (length . takeWhile (== 0)) rowEchelonMatrix
   
 otherIndices :: Int -> Int -> [Int] -> [Int]                                            
 
 otherIndices start end [] = [start..end-1]
-otherIndices start end l@(x:xs) = if start >= end 
-                                  then []
-                                  else  if start == x
-                                        then otherIndices (start + 1) end xs
-                                        else start : (otherIndices (start + 1) end l)
+otherIndices start end l@(x:xs)
+  | start >= end = []
+  | start == x   = otherIndices (start + 1) end xs
+  | otherwise    = start : otherIndices (start + 1) end l
                                            
                                              
 
 isFullRank :: (Fractional a) => [[a]] -> Bool
 
-isFullRank = not . isAllZero . last . rowEchelonForm
+isFullRank = not . all (0 ==) . last . rowEchelonForm
 
-
-isAllZero vector = and $ map ((==) 0) vector
 
 normalize [] = []
 normalize (0:xs) = 0 : normalize xs
@@ -127,11 +120,11 @@ vectorProjection original target = let targetVec = fst target
                                    in  ((original <.> targetVec) / targetLen) *> targetVec
 
 
-intersectionSpace m1 m2 = map (splitAt (rows m1)) $ nullspace $ m1 ++ m2
+intersectionSpace m1 = map (splitAt (rows m1)) . nullspace . (m1 ++)
 
 nullspace :: (Fractional a) => [[a]] -> [[a]]
 
-nullspace = (map snd) . (filter (isAllZero . fst)) . rowOperations1 . attachIdentity
+nullspace = map snd . filter (all (0 ==) . fst) . rowOperations1 . attachIdentity
 
 
 attachIdentity matrix = zip matrix $ iMx $ rows matrix
@@ -155,7 +148,7 @@ normalizeRow r@([],_) = r
 normalizeRow r@(x:xs,_) = mapPair ((1/x) *>) r
 
 reduceRows [] = []                  
-reduceRows (r:rs) = r : map ((mapFst tail) . (\r' -> zipPair (<->) r' r)) rs  
+reduceRows (r:rs) = r : map (mapFst tail . flip (zipPair (<->)) r) rs  
 
                                
 mapFst f p = (f $ fst p, snd p)
@@ -171,14 +164,14 @@ zipPair f p q = (f (fst p) (fst q), f (snd p) (snd q))
 
 mMap :: (a -> b) -> [[a]] -> [[b]]
 
-mMap f = map (map f)
+mMap  = map . map
 
 
 printMatrix :: (Show a) => [[a]] -> String
 
-printMatrix matrix      = (insertLines $ insertSpaces $ pad $ mMap show matrix) ++ "\n\n"
-    where insertLines  	      = concat . (intersperse "\n")
-    	  insertSpaces 	      = map (concat . (intersperse " "))
+printMatrix matrix      = insertLines ( insertSpaces $ pad $ mMap show matrix) ++ "\n\n"
+    where insertLines  	      = concat . intersperse "\n"
+    	  insertSpaces 	      = map unwords
 	  pad mat	      = mMap (padToLength (maxLength mat)) mat
-    	  maxLength 	      = maximum . concat . (mMap length)
-	  padToLength len str = (replicate (len - (length str)) ' ') ++ str  
+    	  maxLength 	      = maximum . concat . mMap length
+	  padToLength len str = replicate (len - length str) ' ' ++ str  
