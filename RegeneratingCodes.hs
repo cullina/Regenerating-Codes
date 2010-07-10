@@ -5,7 +5,7 @@ import Math.Algebra.LinearAlgebra
 import Math.Algebra.Field.Base
 import Math.Algebra.Field.Extension
 import Data.List(sortBy, foldl', intersect, all, any)
-
+import Data.Ord(comparing)
 
 
 data RegenCode field = RegenCode {  
@@ -17,17 +17,17 @@ data RegenCode field = RegenCode {
 indexList :: (Int -> Int) -> [Int] -> [Int]
 
 indexList f []     = []
-indexList f (p:ps) = (map ((flip rem p) . f) [0..p-1]) ++ (map (+ p) (indexList  f ps))  
+indexList f (p:ps) = map (flip rem p . f) [0..p-1] ++ map (+ p) (indexList  f ps)
 
 cycleList :: [Int] -> [[Int]] 
 
 cycleList []     = []
-cycleList (x:xs) = [0..x-1] : (mMap (x +) (cycleList xs))
+cycleList (x:xs) = [0..x-1] : mMap (x +) (cycleList xs)
 
 
 operationMatrix :: (Num a) => (Int -> Int) -> Int -> Int -> [[a]]
 
-operationMatrix f size period = permutationMatrix $ indexList f $ greedyFactorDecomp size period
+operationMatrix f size = permutationMatrix . indexList f . greedyFactorDecomp size
 
 
 rotationMatrix :: (Num a) => Int -> Int -> [[a]]
@@ -40,37 +40,33 @@ multiplicationMatrix m = operationMatrix (* m)
 permutationMatrix xs = map (stdBasisVector (length xs)) xs
 
 
-greedyFactorDecomp sum dividend = greedyDecomp sum (findFactors dividend)
+greedyFactorDecomp sum = greedyDecomp sum . findFactors
 
 greedyDecomp 0 xs   = []
 greedyDecomp sum xs = let h = head xs
 	     	      in if sum >= h
-	     	      	 then h : (greedyDecomp (sum - h) xs)
+	     	      	 then h : greedyDecomp (sum - h) xs
 		      	 else greedyDecomp sum (tail xs)
 
-findFactors n = filter (\x -> (rem n x) == 0) [n,n-1..1]
+findFactors n = filter (\x -> rem n x == 0) [n,n-1..1]
 
 coprimes n = filter (\x -> 1 == gcd n x) [2 .. n-1]
 
 
 cycleToImage :: [[Int]] -> [Int]
 
-cycleToImage = (map snd) . sortPairs . concat . (map singleCycleToImage)
+cycleToImage = map snd . sortBy (comparing fst) . concatMap singleCycleToImage
 
 singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
     where pairGen first prev []    = [(prev, first)]
     	  pairGen first prev rest  = (prev, head rest) : pairGen first (head rest) (tail rest)
 
-sortPairs :: (Ord a) => [(a,a)] -> [(a,a)]
 
-sortPairs = sortBy (\x y -> compare (fst x) (fst y))
-
-
-quotientList fs xs = map head $ getCosets fs xs
+quotientList fs = map head . getCosets fs
 
 getCosets :: (Eq a) => [a -> a] -> [a] -> [[a]]
 
-getCosets fs xs = foldl' (addIfNew fs) [] xs
+getCosets fs = foldl' (addIfNew fs) []
 
 
 addIfNew :: (Eq a) => [a -> a] -> [[a]] -> a -> [[a]]
@@ -90,7 +86,7 @@ getPowers n matrix = genPowersStartingFrom n matrix matrix
     where genPowersStartingFrom 1 start matrix = [start]
     	  genPowersStartingFrom n start matrix = 
     	      let next = matrix <<*>> start
-	      in start : (genPowersStartingFrom (n - 1) next matrix)
+	      in start : genPowersStartingFrom (n - 1) next matrix
 
 
 getRotations :: (Num a) => Int -> Int -> [[[a]] -> [[a]]]
@@ -103,15 +99,15 @@ applyRotations rotations lostStorage = (lostStorage, map ($ lostStorage) rotatio
 getCombinations :: Int -> [a] -> [[a]]
 
 getCombinations 0 list = [[]]
-getCombinations k list = if (length list) <= k
+getCombinations k list = if length list <= k
 		       	 then [list]
-			 else (map ((head list) :) (getCombinations (k - 1) (tail list))) ++
-			      (getCombinations k (tail list))
+			 else map ((head list) :) (getCombinations (k - 1) (tail list)) ++
+			      getCombinations k (tail list)
 
 
 testLinearIndependence :: (Fractional a) => Int -> ([[a]], [[[a]]]) -> Bool
 
-testLinearIndependence k = (all isFullRank) . (collectionPossibilities k)
+testLinearIndependence k = all isFullRank . collectionPossibilities k
 
 
 collectionPossibilities :: (Fractional a) => Int -> ([[a]] , [[[a]]]) -> [[[a]]]
@@ -121,7 +117,7 @@ collectionPossibilities k items = map (concat . (fst items :)) $ getCombinations
 
 recoveryPossibilities x = listCartesianProductOverList . map (intersectionSpace x)
 
-testRecovery1 x = map (map normalize) . map snd . filter (isFullRank . fst) . map unzip . recoveryPossibilities x
+testRecovery1 x = map (map normalize . snd) . filter (isFullRank . fst) . map unzip . recoveryPossibilities x
 
 testRecovery lostStorage remainingStorage additionalRecovered = RegenCode lostStorage additionalRecovered (testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
 
@@ -159,10 +155,10 @@ searchForCodesF7 = searchForCodes f7
                                
 printCode code = printMatrix (storageMatrix code) ++
                  printMatrix (additionalRecoveredVectors code) ++
-                 concat (map printMatrix (recoveryCoefficients code)) ++ "\n"
+                 concatMap printMatrix (recoveryCoefficients code) ++ "\n"
 
 printResults results = let summary = searchSummary results
-                           body = (concat . (map (printCode . head))) results
+                           body = concatMap (printCode . head) results
                            in summary ++ body ++ summary
 
 searchSummary results = show (length results) ++ " codes found\n\n"
