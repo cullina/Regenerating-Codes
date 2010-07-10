@@ -63,9 +63,11 @@ sortPairs :: (Ord a) => [(a,a)] -> [(a,a)]
 sortPairs = sortBy (\x y -> compare (fst x) (fst y))
 
 
-quotientList :: (Eq a) => [a -> a] -> [a] -> [[a]]
+quotientList fs xs = map head $ getCosets fs xs
 
-quotientList fs xs = foldl' (addIfNew fs) [] xs
+getCosets :: (Eq a) => [a -> a] -> [a] -> [[a]]
+
+getCosets fs xs = foldl' (addIfNew fs) [] xs
 
 
 addIfNew :: (Eq a) => [a -> a] -> [[a]] -> a -> [[a]]
@@ -137,7 +139,9 @@ searchForCodes field n k =  let rows        = n - k
                                 independent = filter (testLinearIndependence k) storage
                                 codes       = map (searchForRecovery field numARR) independent
                                 realCodes   = filter (not . null) codes
-                            in  realCodes
+                                x           = map (storageMatrix . head) realCodes
+                                q1          = quotientList (map (reducedRowEchelonForm .) rotations) x
+                            in  quotientList [reducedRowEchelonForm . (<<*>> (multiplicationMatrix (n - 1) columns n))] q1
                                
 
 
