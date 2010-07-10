@@ -4,7 +4,7 @@ import MatrixUtil
 import Math.Algebra.LinearAlgebra
 import Math.Algebra.Field.Base
 import Math.Algebra.Field.Extension
-import Data.List(sortBy, foldl', intersect)
+import Data.List(sortBy, foldl', intersect, all, any)
 
 
 
@@ -63,18 +63,19 @@ sortPairs :: (Ord a) => [(a,a)] -> [(a,a)]
 sortPairs = sortBy (\x y -> compare (fst x) (fst y))
 
 
-quotientList :: (Eq a) => [a -> a] -> [a] -> [a]
+quotientList :: (Eq a) => [a -> a] -> [a] -> [[a]]
 
 quotientList fs xs = foldl' (addIfNew fs) [] xs
 
 
-addIfNew :: (Eq a) => [a -> a] -> [a] -> a -> [a]
+addIfNew :: (Eq a) => [a -> a] -> [[a]] -> a -> [[a]]
 
-addIfNew [] quotient candidate = []
-addIfNew fs quotient candidate = let candidates = candidate : map ($ candidate) fs
-                                 in  if null (intersect quotient candidates)
-                                     then (head candidates) : quotient
-                                     else quotient
+addIfNew fs quotient candidate = let coset = candidate : map ($ candidate) fs
+                                 in case quotient of
+                                   []       -> [coset]
+                                   q@(x:xs) ->  if any (any (== candidate)) quotient
+                                                then quotient
+                                                else coset : quotient
 
 
 
@@ -105,12 +106,12 @@ getCombinations k list = if (length list) <= k
 
 testLinearIndependence :: (Fractional a) => Int -> ([[a]], [[[a]]]) -> Bool
 
-testLinearIndependence k = and . (map isFullRank) . (collectionPossibilities k)
+testLinearIndependence k = (all isFullRank) . (collectionPossibilities k)
 
 
 collectionPossibilities :: (Fractional a) => Int -> ([[a]] , [[[a]]]) -> [[[a]]]
 
-collectionPossibilities k items = map concat $ map (fst items :) $ getCombinations (k - 1) (snd items) 
+collectionPossibilities k items = map (concat . (fst items :)) $ getCombinations (k - 1) (snd items) 
 
 
 recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
