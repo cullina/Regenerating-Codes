@@ -71,7 +71,7 @@ quotientList fs xs = foldl' (addIfNew fs) [] xs
 addIfNew :: (Eq a) => [a -> a] -> [a] -> a -> [a]
 
 addIfNew [] quotient candidate = []
-addIfNew fs quotient candidate = let candidates = map ($ candidate) fs
+addIfNew fs quotient candidate = let candidates = candidate : map ($ candidate) fs
                                  in  if null (intersect quotient candidates)
                                      then (head candidates) : quotient
                                      else quotient
@@ -87,10 +87,12 @@ getPowers n matrix = genPowersStartingFrom n matrix matrix
 	      in start : (genPowersStartingFrom (n - 1) next matrix)
 
 
-getRotations :: (Num a) => Int -> [[a]] -> [[[a]]]
+getRotations :: (Num a) => Int -> Int -> [[[a]] -> [[a]]]
 
-getRotations n matrix = map (matrix <<*>>) $ getPowers (n - 1) $ rotationMatrix (cols matrix) n
+getRotations n columns = map (flip (<<*>>)) $ getPowers (n - 1) $ rotationMatrix columns n
 
+
+applyRotations rotations lostStorage = (lostStorage, map ($ lostStorage) rotations)
 
 getCombinations :: Int -> [a] -> [[a]]
 
@@ -101,14 +103,14 @@ getCombinations k list = if (length list) <= k
 			      (getCombinations k (tail list))
 
 
-testLinearIndependence :: (Fractional a) => Int -> Int -> [[a]] -> Bool
+testLinearIndependence :: (Fractional a) => Int -> ([[a]], [[[a]]]) -> Bool
 
-testLinearIndependence n k = and . (map isFullRank) . (collectionPossibilities n k)
+testLinearIndependence k = and . (map isFullRank) . (collectionPossibilities k)
 
 
-collectionPossibilities :: (Fractional a) => Int -> Int -> [[a]] -> [[[a]]]
+collectionPossibilities :: (Fractional a) => Int -> ([[a]] , [[[a]]]) -> [[[a]]]
 
-collectionPossibilities n k = (map concat) . (getCombinations k) . (getRotations n)
+collectionPossibilities k items = map concat $ map (fst items :) $ getCombinations (k - 1) (snd items) 
 
 
 recoveryPossibilities x = listCartesianProductOverList . (map (intersectionSpace x))
@@ -118,18 +120,26 @@ testRecovery1 x = (map (map normalize)) . (map snd) . (filter (isFullRank . fst)
 testRecovery lostStorage remainingStorage additionalRecovered = RegenCode lostStorage additionalRecovered (testRecovery1 (lostStorage ++ additionalRecovered) remainingStorage)
 
 
-searchForRecovery field n lostStorage = let remainingStorage       = getRotations n lostStorage
-                                            numAdditionalRecovered = n - 1 - (rows lostStorage) 
-                                            additionalRecovered    = genAllNonOverlappingSubspaces field lostStorage numAdditionalRecovered
-                                            testedCodes            = map (testRecovery lostStorage remainingStorage) additionalRecovered
-                                        in filter (not . null . recoveryCoefficients) testedCodes
+searchForRecovery field numARR storage = let lostStorage             = fst storage
+                                             remainingStorage        = snd storage
+                                             additionalRecoveredRows = genAllNonOverlappingSubspaces field lostStorage numARR
+                                             testedCodes             = map (testRecovery lostStorage remainingStorage) additionalRecoveredRows
+                                         in  filter (not . null . recoveryCoefficients) testedCodes
                                            
 
-searchForCodes field n k =  let lostStorage = genAllRowEchelonMatrices field (n - k) ((n - k) * k)
-                                independent = filter (testLinearIndependence n k) lostStorage
-                                codes       = map (searchForRecovery field n) independent
-                            in filter (not . null) codes
+searchForCodes field n k =  let rows        = n - k
+                                columns     = rows * k
+                                numARR      = k - 1
+                                lostStorage = genAllRowEchelonMatrices field rows columns
+                                rotations   = getRotations n columns
+                                storage     = map (applyRotations rotations) lostStorage
+                                independent = filter (testLinearIndependence k) storage
+                                codes       = map (searchForRecovery field numARR) independent
+                                realCodes   = filter (not . null) codes
+                            in  realCodes
                                
+
+
 searchForCodesF3 = searchForCodes f3
 
 searchForCodesF4 = searchForCodes f4
