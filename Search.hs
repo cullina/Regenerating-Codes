@@ -1,6 +1,12 @@
 import RegeneratingCodes
+import System.CPUTime
 
-main = writeCodes 3 5 3
+main = do
+  start <- getCPUTime     
+  writeCodes 3 5 3
+  end <- getCPUTime
+  let diff = (fromIntegral (end - start)) / 10^9
+  putStrLn $ show diff
 
 filename field n k = "f" ++ show field ++ "n" ++ show n ++ "k" ++ show k ++ ".dat"
 

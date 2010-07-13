@@ -156,7 +156,22 @@ searchForCodes field n k =  let rows         = n - k
                                 codesAgain   = map ((searchForRecovery field numARR) . (applyRotations rotations)) q
                                 stats        = CodeStats (length storage) (length independent) (length realCodes) (1 + length equivalences) (length codesAgain)
                             in  (codesAgain, stats)
-                               
+{-
+                                
+searchForCodes field n k =  let rows         = n - k
+                                columns      = rows * k
+                                numARR       = k - 1
+                                lostStorage  = genAllRowEchelonMatrices field rows columns
+                                rotations    = getRotations n columns
+                                equivalences = getEquivalences n columns                                
+                                quotient     = quotientList equivalences lostStorage
+                                storage      = map (applyRotations rotations) quotient
+                                independent  = filter (testLinearIndependence k) storage                                
+                                codes        = map (searchForRecovery field numARR) independent
+                                realCodes    = filter (not . null) codes
+                                stats        = CodeStats (length storage) (length independent) (length realCodes) (1 + length equivalences) (length quotient)
+                            in  (realCodes, stats)
+-}                               
 
 --------
 
