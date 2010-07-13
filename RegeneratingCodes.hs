@@ -14,6 +14,14 @@ data RegenCode field = RegenCode {
   , recoveryCoefficients       :: [[[field]]]
   } deriving (Show)
 
+data CodeStats = CodeStats {
+    subspaces    :: Int
+  , independent  :: Int
+  , codes        :: Int
+  , equivalences :: Int
+  , families     :: Int
+  } deriving (Show)
+
 
 rotationMatrix a = operationMatrix (+ a)
 
@@ -62,6 +70,12 @@ getRotations n columns = map (flip (<<*>>)) $ map (\x -> rotationMatrix x column
 
 
 applyRotations rotations lostStorage = (lostStorage, map ($ lostStorage) rotations)
+
+
+getMultiplications n columns = map (flip (<<*>>)) $ map (\x -> multiplicationMatrix x columns n) $ coprimes n
+
+
+getEquivalences n columns = map (reducedRowEchelonForm .) $ functionProduct (getRotations n columns) (getMultiplications n columns)
 
 --------
 
@@ -120,20 +134,28 @@ addIfNew fs quotient candidate = let coset = candidate : map ($ candidate) fs
 
 --------
 
+functionProduct :: [a -> a] -> [a -> a] -> [a -> a]
 
-searchForCodes field n k =  let rows        = n - k
-                                columns     = rows * k
-                                numARR      = k - 1
-                                lostStorage = genAllRowEchelonMatrices field rows columns
-                                rotations   = getRotations n columns
-                                storage     = map (applyRotations rotations) lostStorage
-                                independent = filter (testLinearIndependence k) storage
-                                codes       = map (searchForRecovery field numARR) independent
-                                realCodes   = filter (not . null) codes
-                                x           = map (storageMatrix . head) realCodes
-                                q1          = quotientList (map (reducedRowEchelonForm .) rotations) x
-                                q2          = quotientList [reducedRowEchelonForm . (<<*>> (multiplicationMatrix (n - 1) columns n))] q1
-                            in  realCodes
+functionProduct fs gs = gs ++ concatMap (\x -> x : map (\y -> x.y) gs) fs
+
+--------
+
+
+searchForCodes field n k =  let rows         = n - k
+                                columns      = rows * k
+                                numARR       = k - 1
+                                lostStorage  = genAllRowEchelonMatrices field rows columns
+                                rotations    = getRotations n columns
+                                storage      = map (applyRotations rotations) lostStorage
+                                independent  = filter (testLinearIndependence k) storage
+                                codes        = map (searchForRecovery field numARR) independent
+                                realCodes    = filter (not . null) codes
+                                x            = map (storageMatrix . head) realCodes
+                                equivalences = getEquivalences n columns
+                                q            = quotientList equivalences x
+                                codesAgain   = map ((searchForRecovery field numARR) . (applyRotations rotations)) q
+                                stats        = CodeStats (length storage) (length independent) (length realCodes) (1 + length equivalences) (length codesAgain)
+                            in  (codesAgain, stats)
                                
 
 --------
@@ -153,8 +175,12 @@ printCode code = printMatrix (storageMatrix code) ++
                  printMatrix (additionalRecoveredVectors code) ++
                  concatMap printMatrix (recoveryCoefficients code) ++ "\n"
 
-printResults results = let summary = searchSummary results
-                           body = concatMap (printCode . head) results
+printResults results = let summary = searchSummary $ snd results
+                           body = concatMap (printCode . head) $ fst results
                            in summary ++ body ++ summary
 
-searchSummary results = show (length results) ++ " codes found\n\n"
+searchSummary stats = show (subspaces stats)    ++ " subspaces\n" ++
+                      show (independent stats)  ++ " satisfy independence\n" ++
+                      show (codes stats)        ++ " codes found\n" ++
+                      show (equivalences stats) ++ " equivalences used\n" ++
+                      show (families stats)     ++ " families found\n\n"

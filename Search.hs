@@ -1,6 +1,6 @@
 import RegeneratingCodes
 
-main = writeCodes 3 4 2
+main = writeCodes 3 5 3
 
 filename field n k = "f" ++ show field ++ "n" ++ show n ++ "k" ++ show k ++ ".dat"
 
