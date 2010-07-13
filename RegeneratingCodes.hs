@@ -133,10 +133,12 @@ searchForCodes field n k =  let rows        = n - k
                                 x           = map (storageMatrix . head) realCodes
                                 q1          = quotientList (map (reducedRowEchelonForm .) rotations) x
                                 q2          = quotientList [reducedRowEchelonForm . (<<*>> (multiplicationMatrix (n - 1) columns n))] q1
-                            in  q1
+                            in  realCodes
                                
 
 --------
+
+searchForCodesF2 = searchForCodes f2
 
 searchForCodesF3 = searchForCodes f3
 
