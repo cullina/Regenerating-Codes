@@ -4,7 +4,7 @@ import MatrixUtil
 import Math.Algebra.LinearAlgebra
 import Math.Algebra.Field.Base
 import Math.Algebra.Field.Extension
-import Data.List(sortBy, foldl', intersect, all, any)
+import Data.List(sortBy, foldl', intersect, all, any, transpose, sort)
 import Data.Ord(comparing)
 
 
@@ -15,11 +15,13 @@ data RegenCode field = RegenCode {
   } deriving (Show)
 
 data CodeStats = CodeStats {
-    subspaces    :: Int
-  , independent  :: Int
-  , codes        :: Int
-  , equivalences :: Int
-  , families     :: Int
+    subspaces      :: Int
+    , equivalences :: Int
+    , q0           :: Int
+    , q1           :: Int    
+    , q2           :: Int
+    , independent  :: Int
+    , codes        :: Int
   } deriving (Show)
 
 
@@ -32,6 +34,9 @@ operationMatrix :: (Num a) => (Int -> Int) -> Int -> Int -> [[a]]
 
 operationMatrix f size = permutationMatrix . indexList f . greedyDecomp size . findFactors
 
+
+scaleMatrix segments scales = let n = sum segments
+                              in  zipWith (scaledBasisVector n) [0 .. n - 1] $ concat $ zipWith replicate segments scales
 
 permutationMatrix xs = map (stdBasisVector (length xs)) xs
 
@@ -49,10 +54,10 @@ greedyDecomp sum xs = let h = head xs
 		      	 else greedyDecomp sum (tail xs)
 
 
-findFactors n = filter ((0 ==) . (rem n)) [n,n-1..1]
+findFactors n = filter ((0 ==) . rem n) [n,n-1..1]
 
 
-coprimes n = filter ((1 ==) . (gcd n)) [2 .. n-1]
+coprimes n = filter ((1 ==) . gcd n) [2 .. n-1]
 
 --------
 
@@ -66,13 +71,19 @@ singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
 
 --------
 
-getRotations n columns = map (flip (<<*>>)) $ map (\x -> rotationMatrix x columns n) [1..n-1]
+getRotations n columns = map (flip (<<*>>). (\x -> rotationMatrix x columns n)) [1..n-1]
 
 
 applyRotations rotations lostStorage = (lostStorage, map ($ lostStorage) rotations)
 
 
-getMultiplications n columns = map (flip (<<*>>)) $ map (\x -> multiplicationMatrix x columns n) $ coprimes n
+getMultiplications n columns = map (flip (<<*>>) . (\x -> multiplicationMatrix x columns n)) $ coprimes n
+
+
+getScalings f n columns = let units   = tail f
+                              shape   = greedyDecomp columns $ findFactors n
+                              vectors = tail $ map (1:) $ genAllVectors units (length shape - 1)
+                          in  map (flip (<<*>>) . scaleMatrix shape) vectors
 
 
 getEquivalences n columns = map (reducedRowEchelonForm .) $ functionProduct (getRotations n columns) (getMultiplications n columns)
@@ -96,6 +107,10 @@ getCombinations k list = if length list <= k
 		       	 then [list]
 			 else map ((head list) :) (getCombinations (k - 1) (tail list)) ++
 			      getCombinations k (tail list)
+
+--------
+
+getDetMatrix k = map (map det . transpose) . getCombinations k . map (getCombinations k)
 
 --------
 
@@ -132,46 +147,40 @@ addIfNew fs quotient candidate = let coset = candidate : map ($ candidate) fs
                                                 then quotient
                                                 else coset : quotient
 
+
+
+
+quotientList2 fs = filter (firstInCoset fs)
+
+firstInCoset fs x = (==) x $ head $ sort $ x : map ($ x) fs
+
 --------
 
 functionProduct :: [a -> a] -> [a -> a] -> [a -> a]
 
-functionProduct fs gs = gs ++ concatMap (\x -> x : map (\y -> x.y) gs) fs
+functionProduct fs gs = gs ++ concatMap (\x -> x : map (x.) gs) fs
 
 --------
 
-
-searchForCodes field n k =  let rows         = n - k
-                                columns      = rows * k
-                                numARR       = k - 1
-                                lostStorage  = genAllRowEchelonMatrices field rows columns
-                                rotations    = getRotations n columns
-                                storage      = map (applyRotations rotations) lostStorage
-                                independent  = filter (testLinearIndependence k) storage
-                                codes        = map (searchForRecovery field numARR) independent
-                                realCodes    = filter (not . null) codes
-                                x            = map (storageMatrix . head) realCodes
-                                equivalences = getEquivalences n columns
-                                q            = quotientList equivalences x
-                                codesAgain   = map ((searchForRecovery field numARR) . (applyRotations rotations)) q
-                                stats        = CodeStats (length storage) (length independent) (length realCodes) (1 + length equivalences) (length codesAgain)
-                            in  (codesAgain, stats)
-{-
-                                
-searchForCodes field n k =  let rows         = n - k
-                                columns      = rows * k
-                                numARR       = k - 1
-                                lostStorage  = genAllRowEchelonMatrices field rows columns
-                                rotations    = getRotations n columns
-                                equivalences = getEquivalences n columns                                
-                                quotient     = quotientList equivalences lostStorage
-                                storage      = map (applyRotations rotations) quotient
-                                independent  = filter (testLinearIndependence k) storage                                
-                                codes        = map (searchForRecovery field numARR) independent
-                                realCodes    = filter (not . null) codes
-                                stats        = CodeStats (length storage) (length independent) (length realCodes) (1 + length equivalences) (length quotient)
+searchForCodes field n k =  let rows            = n - k
+                                columns         = rows * k
+                                numARR          = k - 1
+                                lostStorage     = genAllRowEchelonMatrices field rows columns
+                                scalings        = getScalings field n columns
+                                rotations       = getRotations n columns
+                                equivalences    = getEquivalences n columns
+                                numEquivalences = (length scalings + 1) * (length equivalences + 1)
+                                q0              = quotientList2 scalings lostStorage
+                                q2              = quotientList2 equivalences q0
+                                --q1              = quotientList2 (map (reducedRowEchelonForm .) rotations) q0
+                                --q2              = quotientList2 (map (reducedRowEchelonForm .) multiplications) q1
+                                storage         = map (applyRotations rotations) q2
+                                independent     = filter (testLinearIndependence k) storage                                
+                                codes           = map (searchForRecovery field numARR) independent
+                                realCodes       = filter (not . null) codes
+                                stats           = CodeStats (length lostStorage) numEquivalences (length q0) (length q2) (length q2) (length independent) (length realCodes)
                             in  (realCodes, stats)
--}                               
+                               
 
 --------
 
@@ -195,7 +204,11 @@ printResults results = let summary = searchSummary $ snd results
                            in summary ++ body ++ summary
 
 searchSummary stats = show (subspaces stats)    ++ " subspaces\n" ++
+                      show (equivalences stats) ++ " equivalences used\n" ++                      
+                      show (q0 stats)           ++ " after scaling\n" ++
+                      show (q1 stats)           ++ " after rotation\n" ++
+                      show (q2 stats)           ++ " after multiplication\n" ++
                       show (independent stats)  ++ " satisfy independence\n" ++
-                      show (codes stats)        ++ " codes found\n" ++
-                      show (equivalences stats) ++ " equivalences used\n" ++
-                      show (families stats)     ++ " families found\n\n"
+                      show (codes stats)        ++ " codes found\n"
+
+                      

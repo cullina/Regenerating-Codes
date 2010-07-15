@@ -4,11 +4,13 @@ module MatrixUtil
          cols,
          mMap,
          stdBasisVector,
+         scaledBasisVector,
          isFullRank,
          intersectionSpace,
          listCartesianProductOverList,
          normalize,
          printMatrix,
+         genAllVectors,
          genAllRowEchelonMatrices,
          genAllNonOverlappingSubspaces
        )where
@@ -27,6 +29,9 @@ stdBasisVector 0      index = []
 stdBasisVector length 0     = 1 : replicate (length - 1) 0
 stdBasisVector length index = 0 : stdBasisVector (length - 1) (index - 1)
 
+scaledBasisVector 0      index x = []
+scaledBasisVector length 0     x = x : replicate (length - 1) 0
+scaledBasisVector length index x = 0 : scaledBasisVector (length - 1) (index - 1) x
 
 listCartesianProduct xs ys = concatMap (prependToAll ys) xs 
   where prependToAll ys x = map (x :) ys

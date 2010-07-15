@@ -3,10 +3,10 @@ import System.CPUTime
 
 main = do
   start <- getCPUTime     
-  writeCodes 3 5 3
+  writeCodes 5 5 3
   end <- getCPUTime
-  let diff = (fromIntegral (end - start)) / 10^9
-  putStrLn $ show diff
+  let diff = fromIntegral (end - start) / 10^12
+  print diff
 
 filename field n k = "f" ++ show field ++ "n" ++ show n ++ "k" ++ show k ++ ".dat"
 
