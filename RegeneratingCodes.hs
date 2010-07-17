@@ -32,7 +32,7 @@ multiplicationMatrix m = operationMatrix (* m)
 
 operationMatrix :: (Num a) => (Int -> Int) -> Int -> Int -> [[a]]
 
-operationMatrix f size = permutationMatrix . indexList f . greedyDecomp size . findFactors
+operationMatrix f size = permutationMatrix . concatPermutations . map (simplePermutation f) . getSegments size
 
 
 scaleMatrix segments scales = let n = sum segments
@@ -41,10 +41,16 @@ scaleMatrix segments scales = let n = sum segments
 permutationMatrix xs = map (stdBasisVector (length xs)) xs
 
 
-indexList :: (Int -> Int) -> [Int] -> [Int]
+concatPermutations = foldl' addPermutations [] 
 
-indexList f []     = []
-indexList f (p:ps) = map (flip rem p . f) [0..p-1] ++ map (+ p) (indexList  f ps)
+
+addPermutations l r = l ++ map (+ length l) r
+
+
+simplePermutation f size = map (flip rem size . f) [0 .. size - 1]
+
+
+getSegments size = greedyDecomp size . findFactors
 
 
 greedyDecomp 0 xs   = []
