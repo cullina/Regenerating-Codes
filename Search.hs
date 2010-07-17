@@ -3,7 +3,7 @@ import System.CPUTime
 
 main = do
   start <- getCPUTime     
-  writeCodes 5 5 3
+  writeCodes 4 5 3
   end <- getCPUTime
   let diff = fromIntegral (end - start) / 10^12
   print diff
