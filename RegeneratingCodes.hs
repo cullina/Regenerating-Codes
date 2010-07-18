@@ -35,6 +35,9 @@ operationMatrix :: (Num a) => (Int -> Int) -> Int -> Int -> [[a]]
 operationMatrix f size = permutationMatrix . concatPermutations . map (simplePermutation f) . getSegments size
 
 
+operationMatrix2 segments = permutationMatrix . concatPermutations . zipWith simplePermutation segments
+
+
 scaleMatrix segments scales = let n = sum segments
                               in  zipWith (scaledBasisVector n) [0 .. n - 1] $ concat $ zipWith replicate segments scales
 
@@ -99,6 +102,9 @@ getEquivalences n columns = map (reducedRowEchelonForm .) $ functionProduct (get
 testLinearIndependence :: (Fractional a) => Int -> ([[a]], [[[a]]]) -> Bool
 
 testLinearIndependence k = all isFullRank . collectionPossibilities k
+
+
+testSufficientIndependence r k = all (>= r) . map rank . collectionPossibilities k
 
 
 collectionPossibilities :: (Fractional a) => Int -> ([[a]] , [[[a]]]) -> [[[a]]]
@@ -188,6 +194,23 @@ searchForCodes field n k =  let rows            = n - k
                             in  (realCodes, stats)
                                
 
+ungeneralizedSearch field = let n            = 5
+                                k            = 3
+                                rows         = n - k
+                                columns      = rows * k
+                                numARR       = k - 1
+                                lostStorage  = genAllRowEchelonMatrices field rows n
+                                rotations    = getRotations n n
+                                equivalences = getEquivalences n n
+                                q            = quotientList2 equivalences lostStorage
+                                storage      = map (applyRotations rotations) q
+                                independent  = filter (testSufficientIndependence n k) storage
+                                codes           = map (searchForRecovery field numARR) independent
+                                realCodes       = filter (not . null) codes
+                                
+                            in  realCodes
+                                
+
 --------
 
 searchForCodesF2 = searchForCodes f2
@@ -199,6 +222,8 @@ searchForCodesF4 = searchForCodes f4
 searchForCodesF5 = searchForCodes f5
 
 searchForCodesF7 = searchForCodes f7
+
+ungenF3 = ungeneralizedSearch f3
 
                                
 printCode code = printMatrix (storageMatrix code) ++

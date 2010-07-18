@@ -6,6 +6,7 @@ module MatrixUtil
          stdBasisVector,
          scaledBasisVector,
          isFullRank,
+         rank,
          intersectionSpace,
          listCartesianProductOverList,
          normalize,
@@ -93,6 +94,11 @@ otherIndices start end l@(x:xs)
 isFullRank :: (Fractional a) => [[a]] -> Bool
 
 isFullRank = not . all (0 ==) . last . rowEchelonForm
+
+
+rank :: (Fractional a) => [[a]] -> Int
+
+rank = length . takeWhile (any (0 /=)) . rowEchelonForm
 
 
 normalize [] = []
