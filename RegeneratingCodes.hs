@@ -25,17 +25,14 @@ data CodeStats = CodeStats {
   } deriving (Show)
 
 
-rotationMatrix a = operationMatrix (+ a)
+rotationMatrix segments a = operationMatrix segments $ repeat (+ a)
 
-multiplicationMatrix m = operationMatrix (* m)
-
-
-operationMatrix :: (Num a) => (Int -> Int) -> Int -> Int -> [[a]]
-
-operationMatrix f size = permutationMatrix . concatPermutations . map (simplePermutation f) . getSegments size
+multiplicationMatrix segments m = operationMatrix segments $ repeat (* m)
 
 
-operationMatrix2 segments = permutationMatrix . concatPermutations . zipWith simplePermutation segments
+operationMatrix :: (Num a) => [Int] -> [Int -> Int] -> [[a]]
+
+operationMatrix segments = permutationMatrix . concatPermutations . zipWith simplePermutation segments
 
 
 scaleMatrix segments scales = let n = sum segments
@@ -50,7 +47,7 @@ concatPermutations = foldl' addPermutations []
 addPermutations l r = l ++ map (+ length l) r
 
 
-simplePermutation f size = map (flip rem size . f) [0 .. size - 1]
+simplePermutation size f  = map (flip rem size . f) [0 .. size - 1]
 
 
 getSegments size = greedyDecomp size . findFactors
@@ -80,13 +77,13 @@ singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
 
 --------
 
-getRotations n columns = map (flip (<<*>>). (\x -> rotationMatrix x columns n)) [1..n-1]
+getRotations n segments = map (flip (<<*>>) . rotationMatrix segments) [1..n-1]
 
 
 applyRotations rotations lostStorage = (lostStorage, map ($ lostStorage) rotations)
 
 
-getMultiplications n columns = map (flip (<<*>>) . (\x -> multiplicationMatrix x columns n)) $ coprimes n
+getMultiplications n segments = map (flip (<<*>>) . multiplicationMatrix segments) $ coprimes n
 
 
 getScalings f n columns = let units   = tail f
@@ -95,7 +92,7 @@ getScalings f n columns = let units   = tail f
                           in  map (flip (<<*>>) . scaleMatrix shape) vectors
 
 
-getEquivalences n columns = map (reducedRowEchelonForm .) $ functionProduct (getRotations n columns) (getMultiplications n columns)
+getEquivalences n segments = map (reducedRowEchelonForm .) $ functionProduct (getRotations n segments) (getMultiplications n segments)
 
 --------
 
@@ -177,15 +174,14 @@ functionProduct fs gs = gs ++ concatMap (\x -> x : map (x.) gs) fs
 searchForCodes field n k =  let rows            = n - k
                                 columns         = rows * k
                                 numARR          = k - 1
+                                segments        = getSegments columns n
                                 lostStorage     = genAllRowEchelonMatrices field rows columns
                                 scalings        = getScalings field n columns
-                                rotations       = getRotations n columns
-                                equivalences    = getEquivalences n columns
+                                rotations       = getRotations n segments
+                                equivalences    = getEquivalences n segments
                                 numEquivalences = (length scalings + 1) * (length equivalences + 1)
                                 q0              = quotientList2 scalings lostStorage
                                 q2              = quotientList2 equivalences q0
-                                --q1              = quotientList2 (map (reducedRowEchelonForm .) rotations) q0
-                                --q2              = quotientList2 (map (reducedRowEchelonForm .) multiplications) q1
                                 storage         = map (applyRotations rotations) q2
                                 independent     = filter (testLinearIndependence k) storage                                
                                 codes           = map (searchForRecovery field numARR) independent
@@ -200,8 +196,9 @@ ungeneralizedSearch field = let n            = 5
                                 columns      = rows * k
                                 numARR       = k - 1
                                 lostStorage  = genAllRowEchelonMatrices field rows n
-                                rotations    = getRotations n n
-                                equivalences = getEquivalences n n
+                                segments        = [n]
+                                rotations       = getRotations n segments
+                                equivalences    = getEquivalences n segments
                                 q            = quotientList2 equivalences lostStorage
                                 storage      = map (applyRotations rotations) q
                                 independent  = filter (testSufficientIndependence n k) storage
