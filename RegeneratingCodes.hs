@@ -223,13 +223,23 @@ searchForCodesF7 = searchForCodes f7
 ungenF3 = ungeneralizedSearch f3
 
                                
-printCode code = printMatrix (storageMatrix code) ++
-                 printMatrix (additionalRecoveredVectors code) ++
-                 concatMap printMatrix (recoveryCoefficients code) ++ "\n"
+printCode codes = let code = head $ snd codes
+                  in  show (fst codes) ++ ")\n" ++
+                      show (length (snd codes)) ++ " variants\n\n" ++
+                      printMatrix (storageMatrix code) ++
+                      printMatrix (additionalRecoveredVectors code) ++
+                      concatMap printMatrix (recoveryCoefficients code) ++ "\n"
 
-printResults results = let summary = searchSummary $ snd results
-                           body = concatMap (printCode . head) $ fst results
-                           in summary ++ body ++ summary
+printRecovered codes =  let code = head $ snd codes    
+                        in  show (fst codes) ++ ")\n" ++
+                            printMatrix (reducedRowEchelonForm (storageMatrix code ++ additionalRecoveredVectors code))
+
+
+printResults results = let summary  = searchSummary $ snd results
+                           numbered = zip [1..] $ fst results
+                           body1    = concatMap printCode $ numbered
+                           body2    = concatMap printRecovered $ numbered
+                           in summary ++ body1 ++ body2 ++ summary
 
 searchSummary stats = show (subspaces stats)    ++ " subspaces\n" ++
                       show (equivalences stats) ++ " equivalences used\n" ++                      
@@ -237,6 +247,6 @@ searchSummary stats = show (subspaces stats)    ++ " subspaces\n" ++
                       show (q1 stats)           ++ " after rotation\n" ++
                       show (q2 stats)           ++ " after multiplication\n" ++
                       show (independent stats)  ++ " satisfy independence\n" ++
-                      show (codes stats)        ++ " codes found\n"
+                      show (codes stats)        ++ " codes found\n\n"
 
                       
