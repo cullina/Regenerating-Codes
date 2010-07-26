@@ -161,13 +161,20 @@ addIfNew fs quotient candidate = let coset = candidate : map ($ candidate) fs
 
 quotientList2 fs = filter (firstInCoset fs)
 
-firstInCoset fs x = (==) x $ head $ sort $ x : map ($ x) fs
+firstInCoset fs x = (==) x $ canonicalForm fs x
 
+canonicalForm fs x = head $ sort $ x : map ($ x) fs
 --------
 
 functionProduct :: [a -> a] -> [a -> a] -> [a -> a]
 
 functionProduct fs gs = gs ++ concatMap (\x -> x : map (x.) gs) fs
+
+
+--------
+
+recoveredSubspace fs code = canonicalForm fs $ reducedRowEchelonForm $ storageMatrix code ++ additionalRecoveredVectors code 
+
 
 --------
 
@@ -186,8 +193,9 @@ searchForCodes field n k =  let rows            = n - k
                                 independent     = filter (testLinearIndependence k) storage                                
                                 codes           = map (searchForRecovery field numARR) independent
                                 realCodes       = filter (not . null) codes
+                                spaces          = map (recoveredSubspace equivalences . head) realCodes
                                 stats           = CodeStats (length lostStorage) numEquivalences (length q0) (length q2) (length q2) (length independent) (length realCodes)
-                            in  (realCodes, stats)
+                            in  ((realCodes, stats), spaces)
                                
 
 ungeneralizedSearch field = let n            = 5
@@ -223,23 +231,28 @@ searchForCodesF7 = searchForCodes f7
 ungenF3 = ungeneralizedSearch f3
 
                                
-printCode codes = let code = head $ snd codes
-                  in  show (fst codes) ++ ")\n" ++
-                      show (length (snd codes)) ++ " variants\n\n" ++
+printCode codes = let code = head codes
+                  in  show (length codes) ++ " variants\n\n" ++
                       printMatrix (storageMatrix code) ++
                       printMatrix (additionalRecoveredVectors code) ++
                       concatMap printMatrix (recoveryCoefficients code) ++ "\n"
 
-printRecovered codes =  let code = head $ snd codes    
-                        in  show (fst codes) ++ ")\n" ++
-                            printMatrix (reducedRowEchelonForm (storageMatrix code ++ additionalRecoveredVectors code))
+printRecovered codes =  let code = head codes    
+                        in  printMatrix (reducedRowEchelonForm (storageMatrix code ++ additionalRecoveredVectors code))
 
 
-printResults results = let summary  = searchSummary $ snd results
-                           numbered = zip [1..] $ fst results
-                           body1    = concatMap printCode $ numbered
-                           body2    = concatMap printRecovered $ numbered
-                           in summary ++ body1 ++ body2 ++ summary
+numberList = concat . zipWith numberEntry [1..]
+                     
+numberEntry n x = show n ++ ")\n" ++ x
+
+
+printResults results = let codes = fst $ fst results
+                           stats = snd $ fst results
+                           spaces = snd results
+                           summary  = searchSummary stats
+                           body1    = numberList $ map printCode codes
+                           body2    = numberList $ map printMatrix spaces
+                       in summary ++ body1 ++ body2 ++ summary
 
 searchSummary stats = show (subspaces stats)    ++ " subspaces\n" ++
                       show (equivalences stats) ++ " equivalences used\n" ++                      
