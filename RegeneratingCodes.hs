@@ -4,7 +4,7 @@ import MatrixUtil
 import Math.Algebra.LinearAlgebra
 import Math.Algebra.Field.Base
 import Math.Algebra.Field.Extension
-import Data.List(sortBy, foldl', intersect, all, any, transpose, sort)
+import Data.List(sortBy, foldl', intersect, all, any, transpose, sort, partition)
 import Data.Ord(comparing)
 
 
@@ -75,6 +75,29 @@ singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
     where pairGen first prev []    = [(prev, first)]
     	  pairGen first prev rest  = (prev, head rest) : pairGen first (head rest) (tail rest)
 
+matrixToImage :: (Num a) => [[a]] -> [Int]
+
+matrixToImage = map (length . (takeWhile (== 0)))
+
+imageToCycle :: [Int] -> [[Int]]
+
+imageToCycle = map fst . sortBy (comparing snd). iTC [] . reverse . sortBy (comparing snd) . zip (transpose [[0..]])
+
+
+iTC :: (Eq a) => [([a],a)] -> [([a],a)] -> [([a],a)]
+
+iTC a []     = a
+iTC a (b:bs) = let c = map (attachIfMatches b) bs
+                   d = partition (\x -> head (fst x) == snd x) c               
+               in  iTC (a ++ fst d) (snd d)
+
+
+attachIfMatches :: (Eq a) => ([a],a) -> ([a],a) -> ([a],a)
+
+attachIfMatches a b = if snd a == head (fst b)
+                      then (fst a ++ fst b, snd b)
+                      else b
+
 --------
 
 getRotations n segments = map (flip (<<*>>) . rotationMatrix segments) [1..n-1]
@@ -119,7 +142,7 @@ getCombinations k list = if length list <= k
 
 --------
 
-getDetMatrix k = map (map det . transpose) . getCombinations k . map (getCombinations k)
+detMatrix k = map (map det . transpose) . getCombinations k . map (getCombinations k)
 
 --------
 
