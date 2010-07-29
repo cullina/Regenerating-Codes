@@ -87,9 +87,9 @@ imageToCycle = map fst . sortBy (comparing snd). iTC [] . reverse . sortBy (comp
 iTC :: (Eq a) => [([a],a)] -> [([a],a)] -> [([a],a)]
 
 iTC a []     = a
-iTC a (b:bs) = let c = map (attachIfMatches b) bs
-                   d = partition (\x -> head (fst x) == snd x) c               
-               in  iTC (a ++ fst d) (snd d)
+iTC a (b:bs) = if head (fst b) == snd b
+               then iTC (b:a) bs
+               else iTC a (map (attachIfMatches b) bs)
 
 
 attachIfMatches :: (Eq a) => ([a],a) -> ([a],a) -> ([a],a)
