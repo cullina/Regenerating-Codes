@@ -64,7 +64,7 @@ genAllRowEchelonMatrices range rows cols = map transpose $ gAREM range rows cols
 
 
 gAREM range rows 0 rank = [[]]
-gAREM range rows cols rank = let increasedRank = map ((stdBasisVector rows rank) :) $ gAREM range rows (cols - 1) (rank + 1)
+gAREM range rows cols rank = let increasedRank = map (stdBasisVector rows rank :) $ gAREM range rows (cols - 1) (rank + 1)
                                  vectors = genAllPrefixVectors range rank (rows - rank)
                                  sameRank = listCartesianProduct vectors $ gAREM range rows (cols - 1) rank
                              in if cols + rank == rows
@@ -120,13 +120,13 @@ rowOperations1 :: (Fractional a) => [([a],[a])] -> [([a],[a])]
                                        
                   
 rowOperations1 [] = []                  
-rowOperations1 m@(([],_):rs) = m
-rowOperations1 m@(((x:xs),_):rs) = let rows = partition checkLeadingZero m
-                                       reducedRows = reduceRows $ map normalizeRow $ fst rows
-                                       shortenedRows = map (mapFst tail) (snd rows)                                       
-                                   in case reducedRows of 
-                                       []     -> map (mapFst (0 :)) (rowOperations1 shortenedRows)
-                                       (x:xs) -> x : map (mapFst (0 :)) (rowOperations1 (xs ++ shortenedRows))                                         
+rowOperations1 m@((  [],_):rs) = m
+rowOperations1 m@((x:xs,_):rs) = let rows = partition checkLeadingZero m
+                                     reducedRows = reduceRows $ map normalizeRow $ fst rows
+                                     shortenedRows = map (mapFst tail) (snd rows)                                       
+                                 in case reducedRows of 
+                                     []     -> map (mapFst (0 :)) (rowOperations1 shortenedRows)
+                                     (x:xs) -> x : map (mapFst (0 :)) (rowOperations1 (xs ++ shortenedRows))                                         
 
 checkLeadingZero row = head (fst row) /= 0
 
@@ -155,9 +155,8 @@ mMap  = map . map
 
 printMatrix :: (Show a) => [[a]] -> String
 
-printMatrix matrix      = insertLines ( insertSpaces $ pad $ mMap show matrix) ++ "\n\n"
-    where insertLines  	      = concat . intersperse "\n"
-    	  insertSpaces 	      = map unwords
+printMatrix matrix      = intercalate "\n" ( insertSpaces $ pad $ mMap show matrix) ++ "\n\n"
+    where insertSpaces 	      = map unwords
 	  pad mat	      = mMap (padToLength (maxLength mat)) mat
     	  maxLength 	      = maximum . concat . mMap length
 	  padToLength len str = replicate (len - length str) ' ' ++ str  

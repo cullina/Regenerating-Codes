@@ -15,9 +15,10 @@ projection x = let xt = transpose x
                  Nothing -> Nothing
                  Just y  -> Just (xt <<*>> y <<*>> x)
                   
-projectionError x = case (projection x) of
-  Nothing -> Nothing
-  Just y  -> Just (iMx (cols x) <<->> y)
+projectionError x = 
+    case projection x of
+      Nothing -> Nothing
+      Just y  -> Just (iMx (cols x) <<->> y)
 
 
 

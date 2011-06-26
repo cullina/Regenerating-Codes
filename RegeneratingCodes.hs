@@ -77,7 +77,7 @@ singleCycleToImage xs   = pairGen (head xs) (head xs) (tail xs)
 
 matrixToImage :: (Num a) => [[a]] -> [Int]
 
-matrixToImage = map (length . (takeWhile (== 0)))
+matrixToImage = map (length . takeWhile (== 0))
 
 imageToCycle :: [Int] -> [[Int]]
 
@@ -137,7 +137,7 @@ getCombinations :: Int -> [a] -> [[a]]
 getCombinations 0 list = [[]]
 getCombinations k list = if length list <= k
 		       	 then [list]
-			 else map ((head list) :) (getCombinations (k - 1) (tail list)) ++
+			 else map (head list :) (getCombinations (k - 1) (tail list)) ++
 			      getCombinations k (tail list)
 
 --------

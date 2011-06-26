@@ -10,4 +10,4 @@ main = do
 
 filename field n k = "inc_f" ++ show field ++ "n" ++ show n ++ "k" ++ show k ++ ".dat"
 
-writeCodes = writeFile (filename 3 5 3) $ concatMap (printCode . head) $ ungenF3
+writeCodes = writeFile (filename 3 5 3) $ concatMap (printCode . head) ungenF3
